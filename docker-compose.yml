@@ -1,0 +1,58 @@
+version: '3'
+services:
+  es01b:
+    image: <registry>/elasticsearch:7.10.1
+    container_name: es01
+    restart: unless-stopped
+    environment:
+      - node.name=es01
+      - cluster.name=es-logging
+      - discovery.seed_hosts=es02
+      - cluster.initial_master_nodes=es01,es02
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - ./jvm_conf:/usr/share/elasticsearch/config/jvm.options.d/
+    ports:
+      - 9200:9200
+    networks:
+      - monitor
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:9200/_cluster/health?pretty"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  es02b:
+    image: <registry>/elasticsearch:7.10.1
+    container_name: es02
+    restart: unless-stopped
+    environment:
+      - node.name=es02
+      - cluster.name=es-logging
+      - discovery.seed_hosts=es01
+      - cluster.initial_master_nodes=es01,es02
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+#    ports:
+#      - 9201:9200
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+      - ./jvm_conf:/usr/share/elasticsearch/config/jvm.options.d/
+    networks:
+      - monitor
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+networks:
+  monitor:
+    external: true
